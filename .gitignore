@@ -1,0 +1,3 @@
+*.properties
+src/main/java/com/jpramez/chats/*
+target/*
