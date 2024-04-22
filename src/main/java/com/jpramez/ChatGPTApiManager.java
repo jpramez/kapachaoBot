@@ -11,6 +11,8 @@ import com.google.gson.JsonObject;
 
 public class ChatGPTApiManager {
 
+    private PropertiesManager propertiesManager;
+
     private URL url;
     private HttpURLConnection connection;
 
@@ -19,7 +21,8 @@ public class ChatGPTApiManager {
     private String model;
     private String basePromt;
 
-    public ChatGPTApiManager(PropertiesManager propertiesManager) {
+    public ChatGPTApiManager() throws IOException {
+        this.propertiesManager = PropertiesManager.obtenerInstancia();
         this.stringConnection = propertiesManager.get("chatgpt.apiString");
         this.apiKey = propertiesManager.get("chatgpt.apiKey");
         this.model = propertiesManager.get("chatgpt.model");

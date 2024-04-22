@@ -15,10 +15,10 @@ public class KapachaoBotApp {
     public static void main(String[] args) {
 
         try {
-            PropertiesManager propertiesManager = new PropertiesManager().cargar();
+            PropertiesManager propertiesManager = PropertiesManager.obtenerInstancia();
             String botToken = propertiesManager.get("bot.token");
 
-            KapachaoBot kapachaoBot = new KapachaoBot(propertiesManager, botToken);
+            KapachaoBot kapachaoBot = new KapachaoBot(botToken);
             TelegramBotsApi kapachaoBotApp = new TelegramBotsApi(DefaultBotSession.class);
             kapachaoBotApp.registerBot(kapachaoBot);
 

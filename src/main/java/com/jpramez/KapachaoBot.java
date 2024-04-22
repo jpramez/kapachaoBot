@@ -14,6 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 public class KapachaoBot extends TelegramLongPollingBot {
+    private PropertiesManager propertiesManager;
     private ChatGPTApiManager chatGPT;
     private String chatId;
     private String ultimoComando;
@@ -23,11 +24,11 @@ public class KapachaoBot extends TelegramLongPollingBot {
     private String botToken;
     private int poolMensajes;
 
-    public KapachaoBot(PropertiesManager propertiesManager, String botToken) {
+    public KapachaoBot(String botToken) throws IOException {
         super(botToken);
+        this.propertiesManager = PropertiesManager.obtenerInstancia();
         this.botToken = botToken;
-        this.chatGPT = new ChatGPTApiManager(propertiesManager);
-        this.comandosValidos = List.of("/kapachao");
+        this.comandosValidos = List.of("/kapachao", "/reload");
         this.informacion = new ArrayList<>();
         this.chatsPath = propertiesManager.get("app.chatsPath");
         this.poolMensajes = Integer.parseInt(propertiesManager.get("bot.poolMensajes"));
@@ -38,14 +39,33 @@ public class KapachaoBot extends TelegramLongPollingBot {
             case "/kapachao":
                 String resumen = generarResumenDeLosUltimosMensajes();
                 return new SendMessage(this.chatId, resumen);
+            case "/reload":
+                return new SendMessage(this.chatId, recargarConfiguracion() ? "Se ha actualizado la configuracion"
+                        : "Hubo un error al actualizar la configuracion");
             default:
                 return new SendMessage(this.chatId, "No se reconoce el comando");
         }
     }
 
+    private boolean recargarConfiguracion() {
+        try {
+            this.propertiesManager = PropertiesManager.obtenerInstancia().cargar();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private String generarResumenDeLosUltimosMensajes() {
         this.informacion = cargarListaConLosUltimosMensajes(this.poolMensajes);
-        return this.chatGPT.consultar(this.informacion);
+        
+        try {
+            return new ChatGPTApiManager().consultar(this.informacion);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     private List<String> cargarListaConLosUltimosMensajes(int numeroDeMensajes) {
