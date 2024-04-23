@@ -39,9 +39,9 @@ public class ChatGPTApiManager {
 
             String promt = this.basePromt + ": ";
             for (String info : historico) {
-                promt += info + ". ";
+                promt += info + "\\n";
             }
-
+            promt = promt.replace("\"", "").replace("\\", "");
             String body = "{\"model\": \"" + model + "\", \"messages\": [{\"role\": \"user\", \"content\": \"" + promt
                     + "\"}]}";
             connection.setDoOutput(true);
