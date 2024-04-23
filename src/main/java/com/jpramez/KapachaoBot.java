@@ -15,7 +15,6 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 public class KapachaoBot extends TelegramLongPollingBot {
     private PropertiesManager propertiesManager;
-    private ChatGPTApiManager chatGPT;
     private String chatId;
     private String ultimoComando;
     private String chatsPath;
