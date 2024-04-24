@@ -9,7 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.PartialBotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendAudio;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -33,7 +37,9 @@ public class KapachaoBot extends TelegramLongPollingBot {
         this.poolMensajes = Integer.parseInt(propertiesManager.get("bot.poolMensajes"));
     }
 
-    private SendMessage gestionarComando(String comando, String[] params) {
+    private List<Object> gestionarComando(String comando, String[] params) {
+        List<Object> salida = new ArrayList<>();
+
         switch (comando) {
             case "/kapachao":
                 if (params.length <= 1) {
@@ -44,21 +50,28 @@ public class KapachaoBot extends TelegramLongPollingBot {
                                 this.poolMensajes = parametro;
                             }
                         } catch (NumberFormatException e) {
-                            return new SendMessage(this.chatId, "Se esperaba como parametro un numero");
+                            salida.add(new SendMessage(this.chatId, "Se esperaba como parametro un numero"));
+                            return salida;
                         }
                     }
                     String resumen = generarResumenDeLosUltimosMensajes();
-                    return new SendMessage(this.chatId, resumen);
+                    InputFile audio = generarAudioAPartirDe(resumen);
+                    salida.add(new SendMessage(this.chatId, resumen));
+                    salida.add(new SendAudio(this.chatId, audio));
+                    return salida;
                 } else {
-                    return new SendMessage(this.chatId,
+                    salida.add(new SendMessage(this.chatId,
                             "Numero de parametros incorrectos para el comando. Se esperaba maximo 1, pero se recibieron "
-                                    + params.length);
+                                    + params.length));
+                    return salida;
                 }
             case "/reload":
-                return new SendMessage(this.chatId, recargarConfiguracion() ? "Se ha actualizado la configuracion"
-                        : "Hubo un error al actualizar la configuracion");
+                salida.add(new SendMessage(this.chatId, recargarConfiguracion() ? "Se ha actualizado la configuracion"
+                        : "Hubo un error al actualizar la configuracion"));
+                return salida;
             default:
-                return new SendMessage(this.chatId, "No se reconoce el comando");
+                salida.add(new SendMessage(this.chatId, "No se reconoce el comando"));
+                return salida;
         }
     }
 
@@ -81,6 +94,15 @@ public class KapachaoBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
         return "";
+    }
+
+    private InputFile generarAudioAPartirDe(String resumen) {
+        try {
+            return new ChatGPTApiManager().speech(resumen);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new InputFile();
     }
 
     private List<String> cargarListaConLosUltimosMensajes(int numeroDeMensajes) {
@@ -109,7 +131,14 @@ public class KapachaoBot extends TelegramLongPollingBot {
                 this.ultimoComando = extraerComandoDe(mensajeRecibido);
                 final String[] params = extraerParametrosDe(mensajeRecibido);
                 try {
-                    execute(gestionarComando(ultimoComando, params));
+                    List<Object> ejecutables = gestionarComando(ultimoComando, params);
+                    for (Object ejecuta : ejecutables) {
+                        if (ejecuta instanceof SendMessage) {
+                            execute((SendMessage) ejecuta);
+                        } else if (ejecuta instanceof SendAudio) {
+                            execute((SendAudio) ejecuta);
+                        }
+                    }
                     borrarInformacion();
                 } catch (TelegramApiException e) {
                     e.printStackTrace();

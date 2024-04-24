@@ -1,3 +1,6 @@
 *.properties
+*.mp3
+settings.json
 src/main/java/com/jpramez/chats/*
 target/*
+nohup.out
